@@ -32,6 +32,11 @@ input:focus{outline:none;border-color:#3a4250}
 .luck{margin-top:14px;padding:13px 14px;border-radius:12px;background:var(--card);border:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
 .luck b{font-size:16px;letter-spacing:.15em}
 .luck.good b{color:var(--ok)}.luck.bad b{color:var(--bad)}.luck.mid b{color:var(--gold)}
+.read{margin-top:14px;padding:14px 15px;border-radius:12px;background:#12151a;border:1px solid var(--line)}
+.read p{margin:0 0 10px;font-size:13.5px;line-height:1.85;color:#d5d2ca}
+.read p:last-child{margin-bottom:0}
+.read .cmp{font-size:12.5px;color:#9aa0a8;border-top:1px solid var(--line);padding-top:10px}
+.read .adv{font-size:13.5px;color:var(--gold);letter-spacing:.02em}
 table{width:100%;border-collapse:collapse;margin-top:14px;font-size:12.5px}
 td,th{border-bottom:1px solid var(--line);padding:8px 4px;text-align:center;color:#cfccc4}
 th{color:var(--dim);font-weight:400}
@@ -165,6 +170,49 @@ function chart(c){
    活六神:{天宫:act[c.heaven],地宫:act[c.earth],人宫:act[c.human],时辰:"—"}},
   luck:PALACES[c.human].luck,process:c.process};
 }
+var INTERP={
+ 宫:{大安:"主静。事情能成，但慢；宜守成，不宜急进。",留连:"主缠。事情会拖，多半要等；催反而更慢。",速喜:"主快。消息与机会在近期，该动就动。",赤口:"主口。易有争执、误会、口舌；凡事宜缓议。",小吉:"主顺。小成渐起，按部就班最稳。",空亡:"主空。所问多不实，宜改期、改法，或索性放下。"},
+ 亲:{兄弟:"牵扯同辈与合作，成败跟人有关。",父母:"有长辈、文书或平台助力，也可能要走程序。",子孙:"事有转机，结果偏松快，付出会有出口。",妻财:"与钱、所得相关；成则得，败则耗。",官鬼:"有压力、上级或阻力介入；谨言慎行。",我:"主事在己。"},
+ 神:{青龙:"青龙吉神，多喜庆与贵人。",朱雀:"朱雀主口舌文书，消息快，也易起争。",勾陈:"勾陈主拖延纠葛，田土房产之事尤显。",白虎:"白虎主急变与伤损，宜避锋芒。",玄武:"玄武主暗昧欺瞒，防有人在暗处。",腾蛇:"腾蛇主虚惊反复，事情绕圈。"}
+};
+function elementCmp(me,other){
+ if(me===other)return "比和";
+ if(GENERATES[other]===me)return "生我";
+ if(GENERATES[me]===other)return "我生";
+ if(CONTROLS[me]===other)return "我克";
+ if(CONTROLS[other]===me)return "克我";
+ return "比和";
+}
+var CMP_TXT={生我:"有助力",我生:"耗心力",我克:"可掌控",克我:"有阻力",比和:"平顺"};
+function interpret(r){
+ var he=PALACES[r.human].element;
+ var t=r.table;
+ var lines=[];
+ lines.push("人宫 "+r.human+"（"+he+"）："+INTERP.宫[r.human]);
+ lines.push("天宫 "+r.heaven+"（"+t.五行.天宫+"·"+t.六亲.天宫+"）："+INTERP.亲[t.六亲.天宫]+" "+INTERP.神[t.活六神.天宫]);
+ lines.push("地宫 "+r.earth+"（"+t.五行.地宫+"·"+t.六亲.地宫+"）："+INTERP.亲[t.六亲.地宫]+" "+INTERP.神[t.活六神.地宫]);
+ lines.push("时辰 "+r.hour+"（"+t.五行.时辰+"·"+t.六亲.时辰+"）：时机"+CMP_TXT[elementCmp(he,t.五行.时辰)]);
+ var cmp=[elementCmp(he,t.五行.天宫),elementCmp(he,t.五行.地宫),elementCmp(he,t.五行.时辰)];
+ var good=cmp.filter(function(x){return x==="生我"||x==="我克"||x==="比和"}).length;
+ var bad=cmp.filter(function(x){return x==="克我"||x==="我生"}).length;
+ var lk=PALACES[r.human].luck;
+ var lkBad=(lk==="凶"||lk==="大凶");
+ var lkGood=(lk==="大吉"||lk==="吉"||lk==="小吉");
+ var tail="";
+ if(lkBad){
+   tail=(good>=2)?"外部看似有助力，但人宫不吉，最终仍以守为上。":"外部在消耗，人宫又不吉，宜退守、宜改期。";
+ } else if(lkGood){
+   tail=(bad>=2)?"人宫可用，但外部消耗偏大，宜小步推进。":"人宫与外部相合，可以推进。";
+ } else {
+   tail=(good>=2)?"条件尚可，稳步推进即可。":"外部略耗，放慢节奏更稳。";
+ }
+ var advice=PALACES[r.human].luck==="大凶"||PALACES[r.human].luck==="凶"
+   ? "本课不利于强求。把动作放慢，先保住已有的。"
+   : (PALACES[r.human].luck==="大吉"||PALACES[r.human].luck==="吉"
+     ? "本课可用。想做的事可以往前推一步，但别省掉该走的程序。"
+     : "本课不急。可以做，但别赶；给它一点时间发酵。");
+ return {lines:lines, cmp:"天宫 "+cmp[0]+" · 地宫 "+cmp[1]+" · 时辰 "+cmp[2]+" → "+tail, advice:advice};
+}
 
 </script>
 <script>
@@ -177,6 +225,13 @@ document.querySelectorAll(".tabs button").forEach(function(b){b.addEventListener
   ["now","num","dir"].forEach(function(m){$("#f-"+m).classList.toggle("hide",m!==mode)});
 })});
 var LUCK_CLASS=function(l){return ["大吉","吉","小吉"].indexOf(l)>=0?"good":(l==="中吉"?"mid":"bad")};
+function interpBlock(res){
+  var d=interpret(res);
+  return "<div class=\"read\">"+
+    d.lines.map(function(x){return "<p>"+x+"</p>"}).join("")+
+    "<p class=\"cmp\">"+d.cmp+"</p>"+
+    "<p class=\"adv\">"+d.advice+"</p></div>";
+}
 function render(res){
   var t=res.table;
   function row(k){return "<tr><th>"+k+"</th><td>"+t[k].天宫+"</td><td>"+t[k].地宫+"</td><td>"+t[k].人宫+"</td><td>"+t[k].时辰+"</td></tr>"}
@@ -190,6 +245,7 @@ function render(res){
    "<div class=\"luck "+LUCK_CLASS(res.luck)+"\"><span style=\"color:#8a8f98;font-size:12px;letter-spacing:.15em\">人事吉凶</span><b>"+res.luck+"</b></div>"+
    "<table><tr><th></th><th>天宫</th><th>地宫</th><th>人宫</th><th>时辰</th></tr>"+
    row("五行")+row("六亲")+row("死六神")+row("活六神")+"</table>"+
+   interpBlock(res)+
    "<details><summary>起课过程</summary><div style=\"margin-top:8px;line-height:1.7\">"+res.process+"</div></details>";
 }
 function saveHistory(item){
