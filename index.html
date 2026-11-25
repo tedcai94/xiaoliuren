@@ -37,6 +37,10 @@ input:focus{outline:none;border-color:#3a4250}
 .read p:last-child{margin-bottom:0}
 .read .cmp{font-size:12.5px;color:#9aa0a8;border-top:1px solid var(--line);padding-top:10px}
 .read .adv{font-size:13.5px;color:var(--gold);letter-spacing:.02em}
+.plain{margin-top:12px;padding:14px 15px;border-radius:12px;background:#101317;border:1px dashed #2c333d}
+.plain .ptitle{font-size:11px;color:#6f7681;letter-spacing:.2em;margin-bottom:8px}
+.plain p{margin:0 0 8px;font-size:13.5px;line-height:1.8;color:#cfccc4}
+.plain p:last-child{margin-bottom:0;color:#e0dccf}
 #yao-lines{display:flex;flex-direction:column-reverse;gap:6px;padding:16px 8px;background:var(--card);border:1px solid var(--line);border-radius:12px;min-height:120px;justify-content:center}
 .yao{display:flex;align-items:center;gap:10px;height:16px}
 .yao .pos{width:22px;font-size:11px;color:#5f656e;text-align:right}
@@ -233,6 +237,26 @@ function interpret(r){
      : "本课不急。可以做，但别赶；给它一点时间发酵。");
  return {lines:lines, cmp:"天宫 "+cmp[0]+" · 地宫 "+cmp[1]+" · 时辰 "+cmp[2]+" → "+tail, advice:advice};
 }
+var PLAIN_QIN={兄弟:"同辈或合作伙伴在插手",父母:"长辈、文件、平台在起作用",子孙:"结果和帮手在路上",妻财:"钱和利益是重点",官鬼:"压力、上司或麻烦在拦着",我:"在您自己身上"};
+var PLAIN_GOD={青龙:"有喜气，也有贵人",朱雀:"容易拌嘴，消息来得快",勾陈:"事情拖，有旧账",白虎:"有急变，别硬碰",玄武:"有人在暗处，话别说尽",腾蛇:"多半是虚惊，来回绕"};
+var PLAIN_CMP={生我:"时机站在您这边",我生:"这个点做起来费劲",我克:"时机由您掌握",克我:"时机不利，宜等",比和:"时机平平，正常走"};
+var PLAIN_GUA={大安:"稳。事情能成，但慢，别催。",留连:"拖。会拖一阵，急也没用。",速喜:"快。消息和机会就在眼前。",赤口:"冲。容易吵、容易误会，先别争。",小吉:"顺。慢慢起色，按部就班。",空亡:"空。多半落空，不如改期或换个做法。"};
+function plainEnd(r,c1,c2){
+  var blocked=(c1==="克我"||c2==="克我");
+  var lk=PALACES[r.human].luck;
+  if(lk==="凶"||lk==="大凶") return blocked?"外面在耗您，这一课不适合硬推，先守住已有的。":"外面看不出大拦阻，但这一课本身不吉，仍以守为上。";
+  if(lk==="中吉") return blocked?"外面略耗，能做，但别赶，给它时间。":"外面顺，可以做，只是别赶。";
+  return blocked?"外面有消耗，但底子是好的，小步推进。":"外面顺、底子也顺，可以往前推一步。";
+}
+function plainRead(r){
+  var he=PALACES[r.human].element, t=r.table;
+  var c1=elementCmp(he,t.五行.天宫), c2=elementCmp(he,t.五行.地宫), c3=elementCmp(he,t.五行.时辰);
+  return "这件事的底子："+PLAIN_GUA[r.human]+"\n"+
+    "外面（天宫 "+t.六亲.天宫+"）："+PLAIN_QIN[t.六亲.天宫]+"，"+PLAIN_GOD[t.活六神.天宫]+"。\n"+
+    "底下（地宫 "+t.六亲.地宫+"）："+PLAIN_QIN[t.六亲.地宫]+"，"+PLAIN_GOD[t.活六神.地宫]+"。\n"+
+    "时机："+PLAIN_CMP[c3]+"。\n"+
+    "合起来看："+plainEnd(r,c1,c2);
+}
 
 </script>
 <script>
@@ -247,6 +271,10 @@ document.querySelectorAll(".tabs button").forEach(function(b){b.addEventListener
   ["q","qLabel","go","out"].forEach(function(id){var el=document.getElementById(id); if(el) el.style.display=isYao?"none":"";});
 })});
 var LUCK_CLASS=function(l){return ["大吉","吉","小吉"].indexOf(l)>=0?"good":(l==="中吉"?"mid":"bad")};
+function plainBlock(res){
+  var txt=plainRead(res).split("\n").map(function(l){return "<p>"+l+"</p>"}).join("");
+  return "<div class=\"plain\"><div class=\"ptitle\">白话版</div>"+txt+"</div>";
+}
 function interpBlock(res){
   var d=interpret(res);
   return "<div class=\"read\">"+
@@ -268,6 +296,7 @@ function render(res){
    "<table><tr><th></th><th>天宫</th><th>地宫</th><th>人宫</th><th>时辰</th></tr>"+
    row("五行")+row("六亲")+row("死六神")+row("活六神")+"</table>"+
    interpBlock(res)+
+   plainBlock(res)+
    "<details><summary>起课过程</summary><div style=\"margin-top:8px;line-height:1.7\">"+res.process+"</div></details>";
 }
 function saveHistory(item){
@@ -306,7 +335,7 @@ paintHistory();
 
 </script>
 <script>
-var TG=[{b:"111",n:"乾",x:"天",i:"刚健"},{b:"110",n:"兑",x:"泽",i:"喜悦"},{b:"101",n:"离",x:"火",i:"附丽"},{b:"100",n:"震",x:"雷",i:"奋动"},{b:"011",n:"巽",x:"风",i:"顺入"},{b:"010",n:"坎",x:"水",i:"险陷"},{b:"001",n:"艮",x:"山",i:"静止"},{b:"000",n:"坤",x:"地",i:"柔顺"}];
+var TG=[{b:"111",n:"乾",x:"天",i:"刚健",p:"硬、正、有力量"},{b:"110",n:"兑",x:"泽",i:"喜悦",p:"好说话、带喜气"},{b:"101",n:"离",x:"火",i:"附丽",p:"亮、快，也容易烧起来"},{b:"100",n:"震",x:"雷",i:"奋动",p:"动得急、来得猛"},{b:"011",n:"巽",x:"风",i:"顺入",p:"慢慢渗、拖得长"},{b:"010",n:"坎",x:"水",i:"险陷",p:"险、深、看不清"},{b:"001",n:"艮",x:"山",i:"静止",p:"停住、不动"},{b:"000",n:"坤",x:"地",i:"柔顺",p:"软、能承载、慢"}];
 var HEX={
 "乾":{"乾":"乾为天","兑":"天泽履","离":"天火同人","震":"天雷无妄","巽":"天风姤","坎":"天水讼","艮":"天山遁","坤":"天地否"},
 "兑":{"乾":"泽天夬","兑":"兑为泽","离":"泽火革","震":"泽雷随","巽":"泽风大过","坎":"泽水困","艮":"泽山咸","坤":"泽地萃"},
@@ -366,7 +395,26 @@ function yaoInfo(){
   } else {
     out+="<br>六爻安静，无动爻；以本卦卦象为主，事情大体如其所象。";
   }
-  document.getElementById("yao-info").innerHTML=out;
+  var plain="<div class=\"plain\" style=\"margin-top:12px;text-align:left\"><div class=\"ptitle\">白话版</div>";
+  plain+="<p>这件事外面是「"+up.x+"」（"+up.p+"），里面是「"+low.x+"」（"+low.p+"）。</p>";
+  if(mv.length===0){
+    plain+="<p>六条都不动：局面已经定型，照现在的样子往下走，不会有大的翻动。</p>";
+    plain+="<p>要不要做？看您能不能接受现在的样子——能接受就继续，不能接受，这一卦也没给转机。</p>";
+  } else if(mv.length===1){
+    plain+="<p>只有「"+POS[mv[0]]+"爻」在动：变化就发生在这一步——"+POSMEAN[mv[0]]+"。</p>";
+    plain+="<p>其他五条是背景，这一条才是关键。抓住那一步，别的地方不用瞎使劲。</p>";
+  } else if(mv.length<=3){
+    plain+="<p>有几条同时在动：事情正在变，现在看到的只是开头，结果要走完才知道。</p>";
+    plain+="<p>别急着下结论，先看它往哪边倒；变卦「"+name2+"」是它想去的地方。</p>";
+  } else if(mv.length<6){
+    plain+="<p>大半都在动：旧的样子保不住了，趋势比现状更有分量。</p>";
+    plain+="<p>这时候硬撑没意义，顺着变卦的方向走，比守着原来的想法强。</p>";
+  } else {
+    plain+="<p>六条全动：旧的局面全部翻掉，新的还没成形。</p>";
+    plain+="<p>这种时候做什么都容易被推着走，最稳的是先不动，等新的形状出来。</p>";
+  }
+  plain+="</div>";
+  document.getElementById("yao-info").innerHTML=out+plain;
 }
 function yaoLabel(){
   var n=yaoState.length;
