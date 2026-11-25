@@ -37,6 +37,18 @@ input:focus{outline:none;border-color:#3a4250}
 .read p:last-child{margin-bottom:0}
 .read .cmp{font-size:12.5px;color:#9aa0a8;border-top:1px solid var(--line);padding-top:10px}
 .read .adv{font-size:13.5px;color:var(--gold);letter-spacing:.02em}
+#yao-lines{display:flex;flex-direction:column-reverse;gap:6px;padding:16px 8px;background:var(--card);border:1px solid var(--line);border-radius:12px;min-height:120px;justify-content:center}
+.yao{display:flex;align-items:center;gap:10px;height:16px}
+.yao .pos{width:22px;font-size:11px;color:#5f656e;text-align:right}
+.yao .bar{flex:1;display:flex;gap:6px;align-items:center}
+.yao .seg{height:10px;border-radius:2px;background:#cfccc4}
+.yao.yang .seg{flex:1}
+.yao.yin .seg{width:calc(50% - 3px)}
+.yao.yin .gap{width:6px}
+.yao.moving .seg{background:var(--gold)}
+.yao .mk{width:14px;font-size:12px;color:var(--gold)}
+.yao-appear{animation:yaoIn .45s ease-out}
+@keyframes yaoIn{from{opacity:0;transform:translateY(-6px) scaleX(.6)}to{opacity:1;transform:none}}
 table{width:100%;border-collapse:collapse;margin-top:14px;font-size:12.5px}
 td,th{border-bottom:1px solid var(--line);padding:8px 4px;text-align:center;color:#cfccc4}
 th{color:var(--dim);font-weight:400}
@@ -58,6 +70,7 @@ footer{margin-top:30px;text-align:center;font-size:11px;color:#4e535a}
   <button class="on" data-m="now">时间起卦</button>
   <button data-m="num">数字起卦</button>
   <button data-m="dir">宫位直选</button>
+  <button data-m="yao">六爻摇卦</button>
 </div>
 
 <div id="f-now" class="hide"></div>
@@ -77,7 +90,14 @@ footer{margin-top:30px;text-align:center;font-size:11px;color:#4e535a}
   <label>人宫</label><input id="d3" placeholder="同上">
 </div>
 
-<label>所问何事（可留空）</label>
+<div id="f-yao" class="hide">
+  <div id="yao-lines"></div>
+  <div id="yao-info" class="meta" style="text-align:center;margin-top:10px">点下方按钮，从初爻开始，一爻一爻摇</div>
+  <button class="go" id="yao-btn">摇 第 一 爻</button>
+  <button class="go" id="yao-reset" style="margin-top:8px;background:none;border-color:#2a2f38;color:#8a8f98">重新摇卦</button>
+</div>
+
+<label id="qLabel">所问何事（可留空）</label>
 <input id="q" placeholder="例：这笔生意能不能谈成">
 
 <button class="go" id="go">起 课</button>
@@ -222,7 +242,9 @@ function $(s){return document.querySelector(s)}
 document.querySelectorAll(".tabs button").forEach(function(b){b.addEventListener("click",function(){
   mode=b.dataset.m;
   document.querySelectorAll(".tabs button").forEach(function(x){x.classList.toggle("on",x===b)});
-  ["now","num","dir"].forEach(function(m){$("#f-"+m).classList.toggle("hide",m!==mode)});
+  ["now","num","dir","yao"].forEach(function(m){$("#f-"+m).classList.toggle("hide",m!==mode)});
+  var isYao=(mode==="yao");
+  ["q","qLabel","go","out"].forEach(function(id){var el=document.getElementById(id); if(el) el.style.display=isYao?"none":"";});
 })});
 var LUCK_CLASS=function(l){return ["大吉","吉","小吉"].indexOf(l)>=0?"good":(l==="中吉"?"mid":"bad")};
 function interpBlock(res){
@@ -282,6 +304,88 @@ $("#go").addEventListener("click",function(){
 });
 paintHistory();
 
+</script>
+<script>
+var TG=[{b:"111",n:"乾",x:"天",i:"刚健"},{b:"110",n:"兑",x:"泽",i:"喜悦"},{b:"101",n:"离",x:"火",i:"附丽"},{b:"100",n:"震",x:"雷",i:"奋动"},{b:"011",n:"巽",x:"风",i:"顺入"},{b:"010",n:"坎",x:"水",i:"险陷"},{b:"001",n:"艮",x:"山",i:"静止"},{b:"000",n:"坤",x:"地",i:"柔顺"}];
+var HEX={
+"乾":{"乾":"乾为天","兑":"天泽履","离":"天火同人","震":"天雷无妄","巽":"天风姤","坎":"天水讼","艮":"天山遁","坤":"天地否"},
+"兑":{"乾":"泽天夬","兑":"兑为泽","离":"泽火革","震":"泽雷随","巽":"泽风大过","坎":"泽水困","艮":"泽山咸","坤":"泽地萃"},
+"离":{"乾":"火天大有","兑":"火泽睽","离":"离为火","震":"火雷噬嗑","巽":"火风鼎","坎":"火水未济","艮":"火山旅","坤":"火地晋"},
+"震":{"乾":"雷天大壮","兑":"雷泽归妹","离":"雷火丰","震":"震为雷","巽":"雷风恒","坎":"雷水解","艮":"雷山小过","坤":"雷地豫"},
+"巽":{"乾":"风天小畜","兑":"风泽中孚","离":"风火家人","震":"风雷益","巽":"巽为风","坎":"风水涣","艮":"风山渐","坤":"风地观"},
+"坎":{"乾":"水天需","兑":"水泽节","离":"水火既济","震":"水雷屯","巽":"水风井","坎":"坎为水","艮":"水山蹇","坤":"水地比"},
+"艮":{"乾":"山天大畜","兑":"山泽损","离":"山火贲","震":"山雷颐","巽":"山风蛊","坎":"山水蒙","艮":"艮为山","坤":"山地剥"},
+"坤":{"乾":"地天泰","兑":"地泽临","离":"地火明夷","震":"地雷复","巽":"地风升","坎":"地水师","艮":"地山谦","坤":"坤为地"}
+};
+var POS=["初","二","三","四","五","上"];
+var POSMEAN=["事之始，宜稳不宜急","内卦之中，看自身处境","内卦之终，转折将起","外卦之始，事入外部","主位，关键在此","事之终，过犹不及"];
+var yaoState=[];
+function trigramOf(bits){for(var i=0;i<TG.length;i++){if(TG[i].b===bits)return TG[i];}return TG[7];}
+function tossOnce(){var b=0;for(var i=0;i<3;i++){if(Math.random()<0.5)b++;}return b===0?6:(b===1?7:(b===2?8:9));}
+function yaoDraw(){
+  var box=document.getElementById("yao-lines");
+  var html="";
+  for(var i=0;i<6;i++){
+    var v=yaoState[i];
+    var known=(typeof v==="number");
+    var yang=known?((v===7||v===9)?1:0):0;
+    var moving=known?((v===6||v===9)?1:0):0;
+    var segs;
+    if(!known){segs='<div class="seg" style="background:#222831"></div>';}
+    else if(yang){segs='<div class="seg"></div>';}
+    else {segs='<div class="seg"></div><div class="gap"></div><div class="seg"></div>';}
+    var mk=known?(moving?(v===9?"○":"×"):""):"";
+    html+='<div class="yao '+(known?(yang?"yang":"yin"):"")+(moving?" moving":"")+(known?" yao-appear":"")+'">'+
+      '<span class="pos">'+POS[i]+'</span><span class="bar">'+segs+'</span><span class="mk">'+mk+'</span></div>';
+  }
+  box.innerHTML=html;
+}
+function yaoInfo(){
+  var baseBits=[],chBits=[],mv=[];
+  for(var i=0;i<6;i++){
+    var v=yaoState[i];
+    var b=(v===7||v===9)?1:0;
+    baseBits.push(b);
+    var m=(v===6||v===9);
+    if(m)mv.push(i);
+    chBits.push(m?1-b:b);
+  }
+  var low=trigramOf(baseBits.slice(0,3).join(""));
+  var up=trigramOf(baseBits.slice(3,6).join(""));
+  var name=HEX[up.n][low.n];
+  var out="<b>"+name+"</b>　上"+up.x+"（"+up.i+"）· 下"+low.x+"（"+low.i+"）";
+  if(mv.length){
+    var low2=trigramOf(chBits.slice(0,3).join("")),up2=trigramOf(chBits.slice(3,6).join(""));
+    var name2=HEX[up2.n][low2.n];
+    out+="<br>动爻："+mv.map(function(i){return POS[i]+"爻（"+POSMEAN[i]+"）";}).join("、");
+    out+="<br>变卦：<b>"+name2+"</b>";
+    if(mv.length===1) out+="<br>一爻独动，转折就在"+POS[mv[0]]+"爻；本卦是现状，变卦是走向。";
+    else if(mv.length<=3) out+="<br>数爻发动，情势在变；本卦看起因，变卦看结果。";
+    else if(mv.length<6) out+="<br>动多静少，趋势已偏；以变卦为主判断。";
+    else out+="<br>六爻尽动，旧局全翻、新局未成；此事宜缓不宜决。";
+  } else {
+    out+="<br>六爻安静，无动爻；以本卦卦象为主，事情大体如其所象。";
+  }
+  document.getElementById("yao-info").innerHTML=out;
+}
+function yaoLabel(){
+  var n=yaoState.length;
+  var btn=document.getElementById("yao-btn");
+  if(n>=6){btn.textContent="已 成 卦";btn.disabled=true;}
+  else {btn.textContent="摇 第 "+["一","二","三","四","五","六"][n]+" 爻";btn.disabled=false;}
+}
+document.getElementById("yao-btn").addEventListener("click",function(){
+  if(yaoState.length>=6)return;
+  yaoState.push(tossOnce());
+  yaoDraw();yaoLabel();
+  if(yaoState.length===6)yaoInfo();
+  else document.getElementById("yao-info").textContent="已摇 "+yaoState.length+" 爻，继续";
+});
+document.getElementById("yao-reset").addEventListener("click",function(){
+  yaoState=[];yaoDraw();yaoLabel();
+  document.getElementById("yao-info").textContent="点下方按钮，从初爻开始，一爻一爻摇";
+});
+yaoDraw();yaoLabel();
 </script>
 </body>
 </html>
